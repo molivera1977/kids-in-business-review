@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>"Kids In Business" Review</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section id="coverSection" class="view visible">
+    <h1 class="center">"Kids In Business" Review</h1>
+
+    <div class="cover-flex">
+      <div class="cover-image">
+        <img src="assets/cover.png" alt="Kids In Business Cover" />
+      </div>
+
+      <div class="cover-text-card card">
+        <p>
+          Welcome! Use this site to review the vocabulary, comprehension, and grammar 
+          from the Wonders text <em>"Kids In Business"</em>.
+          <br><br>
+          Select a section below, then click <strong>Start Review</strong>.
+        </p>
+
+        <div class="tabs">
+          <button class="tab active" data-section="vocab">Vocabulary</button>
+          <button class="tab" data-section="comp">Comprehension</button>
+          <button class="tab" data-section="cloze">Cloze (Fill-in)</button>
+        </div>
+
+        <div class="center">
+          <button id="startBtn" class="primary">Start Review</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-quiz" class="view">
+    <div class="card">
+      <div class="quiz-header">
+        <button id="backToCover" class="secondary small">&larr; Back to Cover</button>
+        <div class="quiz-title">
+          <h2 id="quizTitle"></h2>
+          <div id="questionCounter"></div>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div id="progressBar"></div>
+      </div>
+
+      <div id="prompt" class="prompt"></div>
+      <div id="choicesWrap" class="choices"></div>
+      <div id="feedback" class="feedback"></div>
+
+      <div class="quiz-actions">
+        <button id="checkBtn" class="primary">Check Answer</button>
+        <button id="nextBtn" class="secondary" disabled>Next Question</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-result" class="view">
+    <div class="card">
+      <h2 id="resultTitle">Nice work!</h2>
+      <p id="resultStats"></p>
+
+      <div class="center">
+        <button id="retryBtn" class="primary">Try This Section Again</button>
+        <button id="toTop" class="secondary">Return to Cover</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="data/vocab_bank.js"></script>
+  <script src="data/comp.js"></script>
+  <script src="data/cloze.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

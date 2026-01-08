@@ -1,0 +1,349 @@
+/* ============================================
+   KIDS IN BUSINESS COLOR PALETTE
+   ============================================ */
+:root {
+  --blue-deep:   #0d47a1;  /* standard blue */
+  --red-theme:   #c62828;  /* "Time for Kids" Red */
+  --soft-bg:     #fff8e1;  /* soft yellow background */
+  --accent-gold: #ffca28;  /* "Time for Kids" Yellow */
+  --text-dark:   #212121;
+  --card-white:  #ffffff;
+  --danger:      #d32f2f;
+  --correct:     #388e3c;
+}
+
+/* ============================================
+   GLOBAL
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Comic Sans MS", "Comic Neue", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: radial-gradient(circle at top left, #ffffff 0, var(--soft-bg) 45%, #ffffff 100%);
+  color: var(--text-dark);
+}
+
+#app,
+body {
+  min-height: 100vh;
+}
+
+.view {
+  display: none;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.view.visible {
+  display: block;
+}
+
+.center {
+  text-align: center;
+}
+
+/* ============================================
+   COVER SECTION
+   ============================================ */
+
+#coverSection h1 {
+  font-size: 2.2rem;
+  margin-bottom: 20px;
+  color: var(--red-theme);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cover-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.cover-image {
+  flex: 0 1 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-image img {
+  max-width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  border: 3px solid var(--red-theme); /* Adds a nice red border to the cover */
+}
+
+.cover-text-card {
+  flex: 1 1 300px;
+}
+
+/* Card styling reused across views */
+.card {
+  background: var(--card-white);
+  border-radius: 20px;
+  padding: 24px 22px 26px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  border-top: 6px solid var(--red-theme);
+}
+
+/* Tabs on cover */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 18px 0;
+}
+
+.tab {
+  background: #ffffff;
+  border-radius: 999px;
+  border: 2px solid var(--red-theme);
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--red-theme);
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.tab:hover {
+  transform: translateY(-1px);
+}
+
+.tab.active {
+  background: var(--red-theme);
+  color: #ffffff;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+button {
+  border: none;
+  font-family: inherit;
+}
+
+button.primary,
+button.secondary {
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 6px;
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--red-theme), var(--blue-deep));
+  color: #ffffff;
+}
+
+button.primary:hover {
+  filter: brightness(1.1);
+}
+
+button.secondary {
+  background: #ffffff;
+  border: 2px solid var(--blue-deep);
+  color: var(--blue-deep);
+}
+
+button.secondary:hover {
+  background: #eef7ff;
+}
+
+button.small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* ============================================
+   QUIZ VIEW
+   ============================================ */
+
+#view-quiz .card {
+  margin-top: 10px;
+}
+
+.quiz-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.quiz-title {
+  flex: 1;
+}
+
+#quizTitle {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--blue-deep);
+}
+
+#questionCounter {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* Progress bar */
+.progress {
+  width: 100%;
+  background: #eee;
+  border-radius: 999px;
+  overflow: hidden;
+  height: 12px;
+  margin-bottom: 16px;
+}
+
+#progressBar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-gold), var(--red-theme));
+  transition: width 0.25s ease-out;
+}
+
+/* Prompt text */
+#prompt {
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* Choices */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.choice {
+  text-align: left;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #f9f9f9;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+  font-size: 1rem;
+}
+
+.choice strong {
+  min-width: 1.5em;
+  color: var(--blue-deep);
+}
+
+.choice span {
+  flex: 1;
+}
+
+.choice:hover {
+  background: #fff8e1; /* soft yellow hover */
+  border-color: var(--accent-gold);
+}
+
+.choice.selected {
+  border-color: var(--blue-deep);
+  background: #e3f2fd;
+}
+
+.choice.correct {
+  border-color: var(--correct);
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.choice.incorrect {
+  border-color: var(--danger);
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+/* Feedback */
+.feedback {
+  min-height: 1.2em;
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.feedback.correct {
+  color: var(--correct);
+}
+
+.feedback.incorrect {
+  color: var(--danger);
+}
+
+.feedback.warning {
+  color: #ef6c00;
+}
+
+/* Quiz actions */
+.quiz-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 15px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+/* ============================================
+   RESULT VIEW
+   ============================================ */
+
+#view-result .card {
+  text-align: center;
+  margin-top: 40px;
+}
+
+#resultTitle {
+  margin-top: 0;
+  color: var(--red-theme);
+  font-size: 2rem;
+}
+
+#resultStats {
+  font-size: 1.2rem;
+  margin: 20px 0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 700px) {
+  #coverSection h1 {
+    font-size: 1.6rem;
+  }
+
+  .card {
+    padding: 18px 16px 20px;
+  }
+
+  .cover-flex {
+    flex-direction: column;
+  }
+
+  .quiz-actions {
+    justify-content: center;
+  }
+}
