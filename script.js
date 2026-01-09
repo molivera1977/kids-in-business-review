@@ -2,26 +2,31 @@
 // Section configuration
 // ============================================
 const SECTIONS = {
-  vocab: { title: "Vocabulary Review", bank: window.VOCAB_BANK },
-  comp:  { title: "Comprehension Review", bank: window.COMP_BANK },
-  cloze: { title: "Cloze Review", bank: window.CLOZE_BANK },
+  vocab: { title: "Vocabulary", bank: window.VOCAB_BANK },
+  comp:  { title: "Comprehension", bank: window.COMP_BANK },
+  cloze: { title: "Cloze", bank: window.CLOZE_BANK },
 };
 
 // ============================================
 // DOM references
 // ============================================
 const coverSection   = document.getElementById("coverSection");
+const statsSection   = document.getElementById("view-stats");
 const quizSection    = document.getElementById("view-quiz");
 const resultSection  = document.getElementById("view-result");
 
 const tabs           = document.querySelectorAll(".tab");
 const startBtn       = document.getElementById("startBtn");
+const statsBtn       = document.getElementById("statsBtn");
+const backFromStats  = document.getElementById("backFromStats");
+const clearStatsBtn  = document.getElementById("clearStatsBtn");
 
-const backToCoverBtn = document.getElementById("backToCover");
+// Note: backToCoverBtn removed to force completion
 const quizTitleEl    = document.getElementById("quizTitle");
 const counterEl      = document.getElementById("questionCounter");
 const progressBarEl  = document.getElementById("progressBar");
 const promptEl       = document.getElementById("prompt");
+const readAloudBtn   = document.getElementById("readAloudBtn");
 const choicesWrap    = document.getElementById("choicesWrap");
 const feedbackEl     = document.getElementById("feedback");
 const checkBtn       = document.getElementById("checkBtn");
@@ -30,63 +35,32 @@ const nextBtn        = document.getElementById("nextBtn");
 const resultTitleEl  = document.getElementById("resultTitle");
 const resultStatsEl  = document.getElementById("resultStats");
 const retryBtn       = document.getElementById("retryBtn");
+const viewStatsResult= document.getElementById("viewStatsFromResult");
 const toTopBtn       = document.getElementById("toTop");
+
+// Table References
+const vocabHistoryEl = document.getElementById("vocabHistory");
+const compHistoryEl  = document.getElementById("compHistory");
+const clozeHistoryEl = document.getElementById("clozeHistory");
 
 // ============================================
 // State
 // ============================================
 let currentSectionKey = "vocab";
-let session = null;    // { key, bank, idx, correct, total }
+let session = null;    
 let selected = new Set();
 let questionLocked = false;
-
-// ============================================
-// WebAudio chime (simple correct / incorrect sound)
-// ============================================
-let audioCtx;
-
-function chime(ok = true) {
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-
-    o.type = "sine";
-    const now = audioCtx.currentTime;
-
-    if (ok) {
-      // Upward, happy beep
-      o.frequency.setValueAtTime(880, now);
-      o.frequency.linearRampToValueAtTime(1320, now + 0.18);
-    } else {
-      // Slightly downward, “oops” beep
-      o.frequency.setValueAtTime(260, now);
-      o.frequency.linearRampToValueAtTime(180, now + 0.18);
-    }
-
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.25, now + 0.03);
-    g.gain.linearRampToValueAtTime(0.0001, now + 0.30);
-
-    o.connect(g);
-    g.connect(audioCtx.destination);
-
-    o.start(now);
-    o.stop(now + 0.32);
-  } catch (e) {
-    console.warn("Audio chime unavailable:", e);
-  }
-}
+let isQuizActive = false; // Safety lock
 
 // ============================================
 // Helper functions
 // ============================================
 function showView(which) {
-  [coverSection, quizSection, resultSection].forEach(sec => {
-    if (!sec) return;
+  [coverSection, statsSection, quizSection, resultSection].forEach(sec => {
     sec.classList.remove("visible");
   });
-  if (which) which.classList.add("visible");
+  which.classList.add("visible");
+  window.speechSynthesis.cancel();
 }
 
 function setActiveTab(key) {
@@ -100,7 +74,6 @@ function setActiveTab(key) {
   });
 }
 
-// Fisher–Yates shuffle so kids can't memorize order
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -108,15 +81,152 @@ function shuffleArray(arr) {
   }
 }
 
+// ============================================
+// BROWSER SAFETY LOCK (Prevents Refresh)
+// ============================================
+window.addEventListener("beforeunload", function (e) {
+  if (isQuizActive) {
+    e.preventDefault();
+    e.returnValue = "You haven't finished the section yet!";
+    return e.returnValue;
+  }
+});
+
+// ============================================
+// SESSION HISTORY LOGIC
+// ============================================
+function getHistory() {
+  const raw = localStorage.getItem("kids_review_history");
+  return raw ? JSON.parse(raw) : [];
+}
+
+function saveSessionToHistory(sectionKey, sectionTitle, score, total) {
+  const history = getHistory();
+  const pct = Math.round((score / total) * 100);
+  
+  const newEntry = {
+    key: sectionKey, 
+    title: sectionTitle,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: new Date().toLocaleDateString(),
+    score: score,
+    total: total,
+    pct: pct
+  };
+
+  history.push(newEntry);
+  localStorage.setItem("kids_review_history", JSON.stringify(history));
+}
+
+function createHistoryRow(entry) {
+  const row = document.createElement("tr");
+  
+  let pctClass = "bad";
+  if (entry.pct >= 80) pctClass = "good";
+  else if (entry.pct >= 60) pctClass = "okay";
+
+  row.innerHTML = `
+    <td>${entry.time}</td>
+    <td>${entry.score}/${entry.total}</td>
+    <td class="${pctClass}">${entry.pct}%</td>
+  `;
+  return row;
+}
+
+function showStats() {
+  const history = getHistory();
+  const today = new Date().toLocaleDateString();
+  const todaysSessions = history.filter(h => h.date === today);
+
+  // Clear tables
+  vocabHistoryEl.innerHTML = "";
+  compHistoryEl.innerHTML = "";
+  clozeHistoryEl.innerHTML = "";
+
+  const addEmpty = (el) => {
+    el.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">No attempts yet</td></tr>`;
+  };
+
+  const vocabList = todaysSessions.filter(h => h.key === "vocab").reverse();
+  const compList  = todaysSessions.filter(h => h.key === "comp").reverse();
+  const clozeList = todaysSessions.filter(h => h.key === "cloze").reverse();
+
+  if (vocabList.length === 0) addEmpty(vocabHistoryEl);
+  else vocabList.forEach(entry => vocabHistoryEl.appendChild(createHistoryRow(entry)));
+
+  if (compList.length === 0) addEmpty(compHistoryEl);
+  else compList.forEach(entry => compHistoryEl.appendChild(createHistoryRow(entry)));
+
+  if (clozeList.length === 0) addEmpty(clozeHistoryEl);
+  else clozeList.forEach(entry => clozeHistoryEl.appendChild(createHistoryRow(entry)));
+
+  showView(statsSection);
+}
+
+function clearHistory() {
+  if (confirm("Are you sure you want to erase your progress history?")) {
+    localStorage.removeItem("kids_review_history");
+    showStats(); 
+  }
+}
+
+// ============================================
+// TEXT TO SPEECH
+// ============================================
+function speakQuestion() {
+  window.speechSynthesis.cancel();
+  const parts = [];
+  parts.push({ el: promptEl, text: promptEl.innerText, originalHTML: promptEl.innerHTML });
+
+  const choiceBtns = Array.from(document.querySelectorAll(".choice"));
+  choiceBtns.forEach((btn, index) => {
+    const span = btn.querySelector("span");
+    parts.push({
+      el: span,
+      text: `Choice ${String.fromCharCode(65 + index)}. ${span.innerText}`,
+      originalHTML: span.innerHTML
+    });
+  });
+
+  let index = 0;
+  function speakNext() {
+    if (index >= parts.length) return;
+    const part = parts[index];
+    const utterance = new SpeechSynthesisUtterance(part.text);
+    utterance.rate = 0.9; 
+    utterance.lang = "en-US";
+    utterance.onboundary = (event) => {
+      if (event.name === 'word') {
+        const charIndex = event.charIndex;
+        let nextSpace = part.text.indexOf(' ', charIndex + 1);
+        if (nextSpace === -1) nextSpace = part.text.length;
+        const before = part.text.substring(0, charIndex).replace(/\n/g, "<br>");
+        const word = part.text.substring(charIndex, nextSpace);
+        const after = part.text.substring(nextSpace).replace(/\n/g, "<br>");
+        part.el.innerHTML = `${before}<span class="highlight-word">${word}</span>${after}`;
+      }
+    };
+    utterance.onend = () => {
+      part.el.innerHTML = part.originalHTML;
+      index++;
+      speakNext();
+    };
+    window.speechSynthesis.speak(utterance);
+  }
+  speakNext();
+}
+
+// ============================================
+// QUIZ LOGIC
+// ============================================
 function startQuiz() {
   const config = SECTIONS[currentSectionKey];
-  const bank = config.bank.slice(); // copy so we don't mutate original
-
-  // Randomize the order each time a review starts
+  const bank = config.bank.slice(); 
   shuffleArray(bank);
 
   session = {
     key: currentSectionKey,
+    title: config.title,
     bank,
     idx: 0,
     correct: 0,
@@ -126,23 +236,21 @@ function startQuiz() {
   quizTitleEl.textContent = config.title;
   selected = new Set();
   questionLocked = false;
+  isQuizActive = true; // LOCK NAVIGATION
+  
   showView(quizSection);
   renderQuestion();
 }
 
 function renderQuestion() {
   const q = session.bank[session.idx];
-
-  // Counter + progress
   counterEl.textContent = `Question ${session.idx + 1} of ${session.total}`;
   const pct = (session.idx / session.total) * 100;
   progressBarEl.style.width = pct + "%";
 
-  // Question text (preserve line breaks)
   const safeText = q.q.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   promptEl.innerHTML = safeText.replace(/\\n/g, "<br>");
 
-  // Choices
   choicesWrap.innerHTML = "";
   selected.clear();
   questionLocked = false;
@@ -152,7 +260,7 @@ function renderQuestion() {
   checkBtn.disabled = false;
 
   const letters = ["A", "B", "C", "D"];
-  const isMulti = Array.isArray(q.answers);
+  const isMulti = Array.isArray(q.answer) && q.answer.length > 1;
 
   q.choices.forEach((choiceText, idx) => {
     const choiceBtn = document.createElement("button");
@@ -174,72 +282,43 @@ function renderQuestion() {
         choiceBtn.classList.remove("selected");
       } else {
         if (!isMulti) {
-          // single-select question
-          selected.forEach(i => {
-            const oldBtn = choicesWrap.querySelector(`.choice[data-index="${i}"]`);
-            if (oldBtn) oldBtn.classList.remove("selected");
-          });
           selected.clear();
+          document.querySelectorAll(".choice").forEach(b => b.classList.remove("selected"));
         }
         selected.add(idx);
         choiceBtn.classList.add("selected");
       }
-      feedbackEl.textContent = "";
-      feedbackEl.className = "feedback";
     });
-
     choicesWrap.appendChild(choiceBtn);
   });
-
-  // Update Check button label for multi-answer items
-  if (isMulti) {
-    checkBtn.textContent = "Check Answers";
-  } else {
-    checkBtn.textContent = "Check Answer";
-  }
+  checkBtn.textContent = isMulti ? "Check Answers" : "Check Answer";
 }
 
 function gradeCurrentQuestion() {
-  // 🔒 Prevent double-scoring the same question
   if (!session || questionLocked) return;
-
   const q = session.bank[session.idx];
-
+  
   if (selected.size === 0) {
-    feedbackEl.textContent = "Choose an answer before checking.";
+    feedbackEl.textContent = "Please choose an answer first.";
     feedbackEl.className = "feedback warning";
     return;
   }
 
-  const isMulti = Array.isArray(q.answers);
-  let isCorrect = false;
-  let correctIndices = [];
-
-  if (isMulti) {
-    correctIndices = q.answers.slice().sort();
-    const chosen = Array.from(selected).slice().sort();
-    isCorrect = chosen.length === correctIndices.length &&
-                chosen.every((val, i) => val === correctIndices[i]);
-  } else {
-    const ansIndex = q.answer;
-    correctIndices = [ansIndex];
-    isCorrect = selected.has(ansIndex);
-  }
+  let correctIndices = Array.isArray(q.answer) ? q.answer : [q.answer];
+  const chosen = Array.from(selected).sort();
+  const correctSorted = correctIndices.slice().sort();
+  const isCorrect = (chosen.length === correctSorted.length) &&
+                    chosen.every((val, index) => val === correctSorted[index]);
 
   if (isCorrect) {
     session.correct += 1;
-    chime(true);  // ✅ happy beep
-    feedbackEl.textContent = "Correct!";
+    feedbackEl.textContent = "Correct! Great job!";
     feedbackEl.className = "feedback correct";
   } else {
-    chime(false); // ❌ “oops” beep
-    feedbackEl.textContent = isMulti
-      ? "Not quite. Look at which choices should be selected."
-      : "Not quite. The correct answer is highlighted.";
+    feedbackEl.textContent = "Not quite. Review the highlighted answer.";
     feedbackEl.className = "feedback incorrect";
   }
 
-  // Highlight answers
   choicesWrap.querySelectorAll(".choice").forEach(btn => {
     const idx = Number(btn.dataset.index);
     if (correctIndices.includes(idx)) {
@@ -250,7 +329,7 @@ function gradeCurrentQuestion() {
   });
 
   questionLocked = true;
-  checkBtn.disabled = true;   // ✅ stop extra scoring clicks
+  checkBtn.disabled = true;
   nextBtn.disabled = false;
 }
 
@@ -265,53 +344,46 @@ function nextQuestion() {
 }
 
 function showResults() {
+  isQuizActive = false; // UNLOCK NAVIGATION
+
+  // SAVE TO HISTORY (using the key 'vocab', 'comp', etc.)
+  saveSessionToHistory(session.key, session.title, session.correct, session.total);
+
   const correct = session.correct;
   const total = session.total;
-  const rawPct = (correct / total) * 100;
-  const pct = Math.min(100, Math.round(rawPct)); // safety clamp at 100
+  const pct = Math.round((correct / total) * 100);
 
-  if (pct === 100) {
-    resultTitleEl.textContent = "Perfect score!";
-  } else if (pct >= 80) {
-    resultTitleEl.textContent = "Great work!";
-  } else if (pct >= 60) {
-    resultTitleEl.textContent = "Nice effort!";
-  } else {
-    resultTitleEl.textContent = "Keep practicing!";
-  }
+  if (pct === 100) resultTitleEl.textContent = "Perfect score!";
+  else if (pct >= 80) resultTitleEl.textContent = "Great work!";
+  else resultTitleEl.textContent = "Keep practicing!";
 
-  resultStatsEl.textContent = `You answered ${correct} out of ${total} questions correctly (${pct}%).`;
-
+  resultStatsEl.textContent = `You answered ${correct} out of ${total} correctly (${pct}%).`;
   showView(resultSection);
 }
 
 // ============================================
-// Event wiring
+// Events
 // ============================================
-
-// Tabs on cover
 tabs.forEach(tab => {
-  tab.addEventListener("click", () => {
-    setActiveTab(tab.dataset.section);
-  });
+  tab.addEventListener("click", () => setActiveTab(tab.dataset.section));
 });
-
-// Start / Back / Navigation buttons
 startBtn.addEventListener("click", startQuiz);
-backToCoverBtn.addEventListener("click", () => showView(coverSection));
+statsBtn.addEventListener("click", showStats);
+backFromStats.addEventListener("click", () => showView(coverSection));
+clearStatsBtn.addEventListener("click", clearHistory);
+
+// Remove any backToCoverBtn listener if we removed the button from HTML
 toTopBtn.addEventListener("click", () => showView(coverSection));
+viewStatsResult.addEventListener("click", showStats);
 
 checkBtn.addEventListener("click", gradeCurrentQuestion);
 nextBtn.addEventListener("click", nextQuestion);
+readAloudBtn.addEventListener("click", speakQuestion);
 
 retryBtn.addEventListener("click", () => {
   if (!session) return;
-  // restart same section (and reshuffle)
-  const key = session.key;
-  setActiveTab(key);
   startQuiz();
 });
 
-// Show cover on initial load
 showView(coverSection);
 setActiveTab("vocab");

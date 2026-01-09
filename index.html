@@ -17,10 +17,8 @@
 
       <div class="cover-text-card card">
         <p>
-          Welcome! Use this site to review the vocabulary, comprehension, and grammar 
-          from the Wonders text <em>"Kids In Business"</em>.
-          <br><br>
-          Select a section below, then click <strong>Start Review</strong>.
+          Welcome! Use this site to study the vocabulary, comprehension, and cloze 
+          sentences for <em>"Kids In Business"</em>.
         </p>
 
         <div class="tabs">
@@ -29,20 +27,63 @@
           <button class="tab" data-section="cloze">Cloze (Fill-in)</button>
         </div>
 
-        <div class="center">
+        <div class="center action-group">
           <button id="startBtn" class="primary">Start Review</button>
+          <button id="statsBtn" class="secondary">🏆 View Progress Report</button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="view-stats" class="view">
+    <div class="card center">
+      <h2>🏆 Today's Progress Report</h2>
+      <p>See how you improved in each section!</p>
+      
+      <div class="stats-grid">
+        <div class="stat-column">
+          <h3>Vocabulary</h3>
+          <div class="mini-table-wrapper">
+            <table class="history-table">
+              <thead><tr><th>Time</th><th>Score</th><th>%</th></tr></thead>
+              <tbody id="vocabHistory"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="stat-column">
+          <h3>Comprehension</h3>
+          <div class="mini-table-wrapper">
+            <table class="history-table">
+              <thead><tr><th>Time</th><th>Score</th><th>%</th></tr></thead>
+              <tbody id="compHistory"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="stat-column">
+          <h3>Cloze</h3>
+          <div class="mini-table-wrapper">
+            <table class="history-table">
+              <thead><tr><th>Time</th><th>Score</th><th>%</th></tr></thead>
+              <tbody id="clozeHistory"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <button id="clearStatsBtn" class="small-link">Clear History</button>
+      <br><br>
+      <button id="backFromStats" class="secondary">Back to Home</button>
     </div>
   </section>
 
   <section id="view-quiz" class="view">
     <div class="card">
       <div class="quiz-header">
-        <button id="backToCover" class="secondary small">&larr; Back to Cover</button>
         <div class="quiz-title">
-          <h2 id="quizTitle"></h2>
-          <div id="questionCounter"></div>
+          <h2 id="quizTitle">Vocabulary</h2>
+          <div id="questionCounter">Question 1 of 10</div>
         </div>
       </div>
 
@@ -50,7 +91,11 @@
         <div id="progressBar"></div>
       </div>
 
-      <div id="prompt" class="prompt"></div>
+      <div class="prompt-area">
+        <div id="prompt" class="prompt"></div>
+        <button id="readAloudBtn" class="audio-btn">🔊 Read Aloud</button>
+      </div>
+
       <div id="choicesWrap" class="choices"></div>
       <div id="feedback" class="feedback"></div>
 
@@ -67,8 +112,9 @@
       <p id="resultStats"></p>
 
       <div class="center">
-        <button id="retryBtn" class="primary">Try This Section Again</button>
-        <button id="toTop" class="secondary">Return to Cover</button>
+        <button id="retryBtn" class="primary">Study This Again</button>
+        <button id="viewStatsFromResult" class="secondary">See My Progress</button>
+        <button id="toTop" class="secondary">Return to Home</button>
       </div>
     </div>
   </section>
@@ -76,6 +122,7 @@
   <script src="data/vocab_bank.js"></script>
   <script src="data/comp.js"></script>
   <script src="data/cloze.js"></script>
+  
   <script src="script.js"></script>
 </body>
 </html>
